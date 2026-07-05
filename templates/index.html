@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Agent Ecosystem</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.2/marked.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, sans-serif;
+      background: #111;
+      color: #eee;
+      margin: 0;
+      padding: 16px;
+    }
+    h1 { text-align: center; font-size: 20px; margin: 0; }
+
+    .agents {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+    .agent-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+      opacity: 0.35;
+      filter: grayscale(60%);
+      transition: all 0.25s ease;
+      border: 2px solid transparent;
+      background: #1a1a1a;
+      color: white;
+    }
+    .agent-card.active {
+      opacity: 1;
+      filter: grayscale(0%);
+      transform: scale(1.12);
+      border-color: #fff;
+      box-shadow: 0 0 16px 2px currentColor;
+    }
+    .agent-card svg { width: 40px; height: 40px; }
+    .researcher { color: #4fc3d9; }
+    .writer { color: #6fcf6f; }
+    .planner { color: #e0b84f; }
+    .coder { color: #b06fe0; }
+    .sales { color: #ef5350; }
+    .pm { color: #ff9248; }
+    .recruiter { color: #a3d939; }
+    .infra { color: #2dd4bf; }
+    .comms { color: #818cf8; }
+
+    #chat {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+    .bubble h1, .bubble h2, .bubble h3 {
+      font-size: 16px;
+      margin: 10px 0 6px;
+    }
+    .bubble p { margin: 6px 0; }
+    .bubble ul, .bubble ol { margin: 6px 0; padding-left: 20px; }
+    .bubble table { border-collapse: collapse; margin: 8px 0; }
+    .bubble th, .bubble td { border: 1px solid #444; padding: 4px 8px; font-size: 13px; }
+    .bubble code { background: #000; padding: 2px 5px; border-radius: 4px; font-size: 13px; }
+    .user-bubble {
+      background: #222;
+      margin-left: 20%;
+    }
+    .agent-bubble {
+      margin-right: 20%;
+      background: #1a1a1a;
+      border: 1px solid #333;
+    }
+    .agent-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      opacity: 0.85;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+    .agent-label svg { width: 20px; height: 20px; }
+
+    .typing-bubble {
+      margin-right: 20%;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+    .dot {
+      width: 7px;
+      height: 7px;
+      background: #888;
+      border-radius: 50%;
+      animation: bounce 1.2s infinite ease-in-out;
+    }
+    .dot:nth-child(2) { animation-delay: 0.15s; }
+    .dot:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+      30% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    #input-row {
+      display: flex;
+      gap: 8px;
+      max-width: 700px;
+      margin: 20px auto 0;
+    }
+    #message {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+    button {
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #444;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+
+  <div style="display:flex; justify-content:space-between; align-items:center; max-width:900px; margin:0 auto;">
+    <h1>🤖 My AI Agent Ecosystem</h1>
+    <div style="display:flex; gap:8px;">
+      <button onclick="toggleHistory()" style="background:#333; padding:8px 14px; border-radius:8px; font-size:12px;">📜 History</button>
+      <button onclick="toggleMemory()" style="background:#333; padding:8px 14px; border-radius:8px; font-size:12px;">🧠 Memory</button>
+    </div>
+  </div>
+
+  <div class="agents">
+    <div class="agent-card researcher" id="card-researcher">
+      <svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><circle cx="22" cy="31" r="4" fill="#0b0f14"/><circle cx="38" cy="31" r="4" fill="#0b0f14"/><circle cx="23" cy="30" r="1.3" fill="#fff"/><circle cx="39" cy="30" r="1.3" fill="#fff"/><path d="M22 38 Q30 43 38 38" stroke="#0b0f14" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <span>Researcher</span>
+    </div>
+    <div class="agent-card writer" id="card-writer">
+      <svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><circle cx="22" cy="31" r="4" fill="#0b0f14"/><circle cx="38" cy="31" r="4" fill="#0b0f14"/><circle cx="23" cy="30" r="1.3" fill="#fff"/><circle cx="39" cy="30" r="1.3" fill="#fff"/><path d="M22 38 Q30 43 38 38" stroke="#0b0f14" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <span>Writer</span>
+    </div>
+    <div class="agent-card planner" id="card-planner">
+      <svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><circle cx="22" cy="31" r="4" fill="#0b0f14"/><circle cx="38" cy="31" r="4" fill="#0b0f14"/><circle cx="23" cy="30" r="1.3" fill="#fff"/><circle cx="39" cy="30" r="1.3" fill="#fff"/><path d="M22 38 Q30 43 38 38" stroke="#0b0f14" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <span>Planner</span>
+    </div>
+    <div class="agent-card coder" id="card-coder">
+      <svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><rect x="18" y="28" width="8" height="6" rx="2" fill="#0b0f14"/><rect x="34" y="28" width="8" height="6" rx="2" fill="#0b0f14"/><path d="M24 39 L30 42 L36 39" stroke="#0b0f14" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Coder</span>
+    </div>
+    <div class="agent-card sales" id="card-sales">
+      <svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><path d="M20 30 Q22 26 24 30" stroke="#0b0f14" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M36 30 Q38 26 40 30" stroke="#0b0f14" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M21 38 Q30 46 39 38" stroke="#0b0f14" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+      <span>Sales</span>
+    </div>
+    <div class="agent-card pm" id="card-pm">
+      <svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><circle cx="22" cy="31" r="4" fill="#0b0f14"/><circle cx="38" cy="31" r="4" fill="#0b0f14"/><circle cx="23" cy="30" r="1.3" fill="#fff"/><circle cx="39" cy="30" r="1.3" fill="#fff"/><rect x="24" y="38" width="12" height="3" rx="1.5" fill="#0b0f14"/></svg>
+      <span>PM</span>
+    </div>
+    <div class="agent-card recruiter" id="card-recruiter">
+      <svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><circle cx="22" cy="31" r="4" fill="#0b0f14"/><circle cx="38" cy="31" r="4" fill="#0b0f14"/><circle cx="23" cy="30" r="1.3" fill="#fff"/><circle cx="39" cy="30" r="1.3" fill="#fff"/><path d="M22 38 Q30 43 38 38" stroke="#0b0f14" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <span>Recruiter</span>
+    </div>
+    <div class="agent-card infra" id="card-infra">
+      <svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><rect x="18" y="28" width="8" height="6" rx="2" fill="#0b0f14"/><rect x="34" y="28" width="8" height="6" rx="2" fill="#0b0f14"/><path d="M24 39 L30 42 L36 39" stroke="#0b0f14" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Infra</span>
+    </div>
+    <div class="agent-card comms" id="card-comms">
+      <svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><circle cx="22" cy="31" r="4" fill="#0b0f14"/><circle cx="38" cy="31" r="4" fill="#0b0f14"/><circle cx="23" cy="30" r="1.3" fill="#fff"/><circle cx="39" cy="30" r="1.3" fill="#fff"/><path d="M21 38 Q30 46 39 38" stroke="#0b0f14" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+      <span>Comms</span>
+    </div>
+  </div>
+
+  <div id="chat"></div>
+
+  <div id="input-row">
+    <input type="text" id="message" placeholder="What do you need help with?">
+    <button id="sendBtn" onclick="sendMessage()">Send</button>
+  </div>
+
+  <div id="memoryPanel" style="display:none; position:fixed; top:0; right:0; width:320px; height:100vh; background:#161616; border-left:1px solid #333; padding:16px; overflow-y:auto; box-sizing:border-box;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <strong>🧠 Agent Memory</strong>
+      <button onclick="toggleMemory()" style="background:#333; padding:4px 10px; border-radius:6px; font-size:12px;">✕</button>
+    </div>
+    <div id="memoryList"></div>
+  </div>
+
+  <div id="historyPanel" style="display:none; position:fixed; top:0; left:0; width:320px; height:100vh; background:#161616; border-right:1px solid #333; padding:16px; overflow-y:auto; box-sizing:border-box; z-index:999;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <strong>📜 Past Conversations</strong>
+      <button onclick="toggleHistory()" style="background:#333; padding:4px 10px; border-radius:6px; font-size:12px;">✕</button>
+    </div>
+    <div id="conversationList"></div>
+  </div>
+
+  <script>
+    const AGENT_ICONS = {
+      researcher: '<svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><circle cx="22" cy="31" r="4" fill="#0b0f14"/><circle cx="38" cy="31" r="4" fill="#0b0f14"/><circle cx="23" cy="30" r="1.3" fill="#fff"/><circle cx="39" cy="30" r="1.3" fill="#fff"/><path d="M22 38 Q30 43 38 38" stroke="#0b0f14" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
+      writer: '<svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><circle cx="22" cy="31" r="4" fill="#0b0f14"/><circle cx="38" cy="31" r="4" fill="#0b0f14"/><circle cx="23" cy="30" r="1.3" fill="#fff"/><circle cx="39" cy="30" r="1.3" fill="#fff"/><path d="M22 38 Q30 43 38 38" stroke="#0b0f14" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
+      planner: '<svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><circle cx="22" cy="31" r="4" fill="#0b0f14"/><circle cx="38" cy="31" r="4" fill="#0b0f14"/><circle cx="23" cy="30" r="1.3" fill="#fff"/><circle cx="39" cy="30" r="1.3" fill="#fff"/><path d="M22 38 Q30 43 38 38" stroke="#0b0f14" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
+      coder: '<svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><rect x="18" y="28" width="8" height="6" rx="2" fill="#0b0f14"/><rect x="34" y="28" width="8" height="6" rx="2" fill="#0b0f14"/><path d="M24 39 L30 42 L36 39" stroke="#0b0f14" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      sales: '<svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><path d="M20 30 Q22 26 24 30" stroke="#0b0f14" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M36 30 Q38 26 40 30" stroke="#0b0f14" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M21 38 Q30 46 39 38" stroke="#0b0f14" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      pm: '<svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><circle cx="22" cy="31" r="4" fill="#0b0f14"/><circle cx="38" cy="31" r="4" fill="#0b0f14"/><circle cx="23" cy="30" r="1.3" fill="#fff"/><circle cx="39" cy="30" r="1.3" fill="#fff"/><rect x="24" y="38" width="12" height="3" rx="1.5" fill="#0b0f14"/></svg>',
+      recruiter: '<svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><circle cx="22" cy="31" r="4" fill="#0b0f14"/><circle cx="38" cy="31" r="4" fill="#0b0f14"/><circle cx="23" cy="30" r="1.3" fill="#fff"/><circle cx="39" cy="30" r="1.3" fill="#fff"/><path d="M22 38 Q30 43 38 38" stroke="#0b0f14" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
+      infra: '<svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><rect x="18" y="28" width="8" height="6" rx="2" fill="#0b0f14"/><rect x="34" y="28" width="8" height="6" rx="2" fill="#0b0f14"/><path d="M24 39 L30 42 L36 39" stroke="#0b0f14" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      comms: '<svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="currentColor" opacity="0.25"/><rect x="14" y="18" width="32" height="26" rx="10" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/><line x1="30" y1="13" x2="30" y2="18" stroke="currentColor" stroke-width="2"/><circle cx="22" cy="31" r="4" fill="#0b0f14"/><circle cx="38" cy="31" r="4" fill="#0b0f14"/><circle cx="23" cy="30" r="1.3" fill="#fff"/><circle cx="39" cy="30" r="1.3" fill="#fff"/><path d="M21 38 Q30 46 39 38" stroke="#0b0f14" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>'
+    };
+
+    const chat = document.getElementById("chat");
+    const input = document.getElementById("message");
+    const sendBtn = document.getElementById("sendBtn");
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    function addUserBubble(text) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "bubble user-bubble";
+      wrapper.innerText = text;
+      chat.appendChild(wrapper);
+      wrapper.scrollIntoView({ behavior: "smooth" });
+    }
+
+    function addAgentBubble(text, agentClass, label, downloadFile) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "bubble agent-bubble " + agentClass;
+
+      const labelEl = document.createElement("div");
+      labelEl.className = "agent-label";
+      labelEl.innerHTML = (AGENT_ICONS[agentClass] || "") + "<span>" + label + "</span>";
+      wrapper.appendChild(labelEl);
+
+      const contentEl = document.createElement("div");
+      contentEl.innerHTML = marked.parse(text || "");
+      wrapper.appendChild(contentEl);
+
+      if (downloadFile) {
+        const link = document.createElement("a");
+        link.href = "/download/" + downloadFile;
+        link.innerText = "⬇ Download as Word (.docx)";
+        link.style.cssText = "display:inline-block; margin-top:8px; font-size:12px; background:#2563eb; color:white; padding:6px 12px; border-radius:6px; text-decoration:none;";
+        wrapper.appendChild(link);
+      }
+
+      chat.appendChild(wrapper);
+      wrapper.scrollIntoView({ behavior: "smooth" });
+    }
+
+    function showTyping() {
+      const wrapper = document.createElement("div");
+      wrapper.className = "typing-bubble";
+      wrapper.id = "typingIndicator";
+      wrapper.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+      chat.appendChild(wrapper);
+      wrapper.scrollIntoView({ behavior: "smooth" });
+    }
+
+    function hideTyping() {
+      const el = document.getElementById("typingIndicator");
+      if (el) el.remove();
+    }
+
+    function setActive(agentName) {
+      document.querySelectorAll(".agent-card").forEach(c => c.classList.remove("active"));
+      if (agentName) {
+        const card = document.getElementById("card-" + agentName);
+        if (card) card.classList.add("active");
+      }
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+function extractJSONObjects(buffer) {
+      const objects = [];
+      let depth = 0;
+      let start = -1;
+      let inString = false;
+      let escape = false;
+      let lastEnd = 0;
+
+      for (let i = 0; i < buffer.length; i++) {
+        const char = buffer[i];
+
+        if (inString) {
+          if (escape) escape = false;
+          else if (char === '\\') escape = true;
+          else if (char === '"') inString = false;
+          continue;
+        }
+
+        if (char === '"') { inString = true; continue; }
+
+        if (char === '{') {
+          if (depth === 0) start = i;
+          depth++;
+        } else if (char === '}') {
+          depth--;
+          if (depth === 0 && start !== -1) {
+            objects.push(buffer.slice(start, i + 1));
+            lastEnd = i + 1;
+            start = -1;
+          }
+        }
+      }
+
+      return { objects, remaining: buffer.slice(lastEnd) };
+    }
+    async function sendMessage() {
+      const message = input.value.trim();
+      if (!message) return;
+
+      addUserBubble(message);
+      input.value = "";
+      sendBtn.disabled = true;
+      showTyping();
+
+      try {
+        const response = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message })
+        });
+
+       const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let firstStep = true;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          const { objects, remaining } = extractJSONObjects(buffer);
+          buffer = remaining;
+
+          for (const objStr of objects) {
+            const step = JSON.parse(objStr);
+
+            if (firstStep) {
+              hideTyping();
+              firstStep = false;
+            }
+
+            setActive(step.agent);
+            addAgentBubble(step.text, step.agent, step.agent.toUpperCase(), step.download);
+            showTyping();
+          }
+        }
+
+        hideTyping();
+      } catch (err) {
+        hideTyping();
+        addAgentBubble("Error: " + err.message, "", "ERROR");
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    async function toggleMemory() {
+      const panel = document.getElementById("memoryPanel");
+      const isOpen = panel.style.display === "block";
+      panel.style.display = isOpen ? "none" : "block";
+      if (!isOpen) await loadMemory();
+    }
+
+    async function loadMemory() {
+      const res = await fetch("/memory");
+      const data = await res.json();
+      const list = document.getElementById("memoryList");
+      list.innerHTML = "";
+
+      data.agents.forEach(a => {
+        const card = document.createElement("div");
+        card.style.cssText = "background:#1f1f1f; border:1px solid #333; border-radius:8px; padding:10px; margin-bottom:10px;";
+
+        const header = document.createElement("div");
+        header.style.cssText = "display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;";
+        header.innerHTML = `<strong style="font-size:13px;">${a.name}</strong><span style="font-size:11px; opacity:0.6;">${a.message_count} msgs</span>`;
+        card.appendChild(header);
+
+        if (a.last_messages.length > 0) {
+          const preview = document.createElement("div");
+          preview.style.cssText = "font-size:11px; opacity:0.7; max-height:80px; overflow-y:auto; margin-bottom:8px;";
+          a.last_messages.forEach(m => {
+            const role = m.role === "user" ? "You" : a.name;
+            const text = typeof m.content === "string" ? m.content : JSON.stringify(m.content);
+            preview.innerHTML += `<div style="margin-bottom:4px;"><b>${role}:</b> ${text.slice(0, 80)}${text.length > 80 ? "..." : ""}</div>`;
+          });
+          card.appendChild(preview);
+        } else {
+          const empty = document.createElement("div");
+          empty.style.cssText = "font-size:11px; opacity:0.4; margin-bottom:8px;";
+          empty.innerText = "No conversation yet";
+          card.appendChild(empty);
+        }
+
+        const clearBtn = document.createElement("button");
+        clearBtn.innerText = "Clear memory";
+        clearBtn.style.cssText = "background:#7f1d1d; padding:4px 8px; border-radius:6px; font-size:11px; width:100%;";
+        clearBtn.onclick = async () => {
+          await fetch(`/memory/clear/${a.name.toLowerCase()}`, { method: "POST" });
+          await loadMemory();
+        };
+        card.appendChild(clearBtn);
+
+        list.appendChild(card);
+      });
+    }
+
+    async function toggleHistory() {
+      const panel = document.getElementById("historyPanel");
+      const isOpen = panel.style.display === "block";
+      panel.style.display = isOpen ? "none" : "block";
+      if (!isOpen) await loadConversationList();
+    }
+
+async function loadConversationList() {
+      const res = await fetch("/conversations");
+      const data = await res.json();
+      const listEl = document.getElementById("conversationList");
+      listEl.innerHTML = "";
+
+      if (!data.conversations || data.conversations.length === 0) {
+        listEl.innerHTML = '<div style="font-size:12px; opacity:0.5;">No past conversations yet</div>';
+        return;
+      }
+
+      data.conversations.forEach(conv => {
+        const date = new Date(conv.ts * 1000);
+        const dateStr = date.toLocaleDateString() + " " + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+        const btn = document.createElement("div");
+        btn.style.cssText = "background:#1f1f1f; border:1px solid #333; padding:10px; border-radius:8px; margin-bottom:8px; cursor:pointer;";
+        btn.innerHTML = `<div style="font-size:12px; font-weight:bold; margin-bottom:4px;">${conv.title}</div><div style="font-size:10px; opacity:0.5;">${dateStr}</div>`;
+        btn.onmouseover = () => btn.style.background = "#2a2a2a";
+        btn.onmouseout = () => btn.style.background = "#1f1f1f";
+        btn.addEventListener("click", () => resumeConversation(conv));
+        listEl.appendChild(btn);
+      });
+    }
+
+    function resumeConversation(conv) {
+      chat.innerHTML = "";
+
+      if (Array.isArray(conv.steps) && conv.steps.length > 0) {
+        if (conv.user_message) {
+          addUserBubble(conv.user_message);
+        }
+        conv.steps.forEach(step => {
+          addAgentBubble(step.text, step.agent, step.agent.toUpperCase(), step.download);
+        });
+      } else if (Array.isArray(conv.messages)) {
+        conv.messages.forEach(m => {
+          if (m.role === "user") {
+            addUserBubble(m.text);
+          } else {
+            addAgentBubble(m.text, m.agent, m.agent.toUpperCase());
+          }
+        });
+      }
+
+      toggleHistory();
+      input.focus();
+      console.log("Chat resumed with", (conv.messages ? conv.messages.length : conv.steps ? conv.steps.length : 0), "messages.");
+    }
+  </script>
+
+</body>
+</html>

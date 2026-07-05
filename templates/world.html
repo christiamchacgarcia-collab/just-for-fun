@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent City</title>
+<style>
+  body {
+    margin: 0;
+    background: #1c2733;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    font-family: -apple-system, sans-serif;
+  }
+  #topbar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: #101820;
+    box-sizing: border-box;
+  }
+  #topbar h1 { color: #fff; font-size: 18px; margin: 0; }
+  #topbar a {
+    background: #2c3e50;
+    color: #cfd8dc;
+    padding: 6px 14px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 13px;
+    margin-left: 8px;
+  }
+  #canvasWrap {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+  }
+  canvas {
+    background-color: #7ec855;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border-radius: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>🏙️ Agent City</h1>
+  <div>
+    <a href="/world">World</a>
+    <a href="/">Chat View</a>
+  </div>
+</div>
+
+<div id="canvasWrap">
+  <canvas id="gameCanvas" width="1024" height="600"></canvas>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const TILE_WIDTH = 64;
+const TILE_HEIGHT = 32;
+const MAP_SIZE = 12;
+const ORIGIN_X = canvas.width / 2;
+const ORIGIN_Y = 60;
+
+function gridToScreen(mapX, mapY) {
+  const screenX = ORIGIN_X + (mapX - mapY) * (TILE_WIDTH / 2);
+  const screenY = ORIGIN_Y + (mapX + mapY) * (TILE_HEIGHT / 2);
+  return { x: screenX, y: screenY };
+}
+
+const mapData = Array(MAP_SIZE).fill(null).map(() => Array(MAP_SIZE).fill(0));
+for (let i = 1; i < 11; i++) {
+  mapData[5][i] = 1;
+  mapData[6][i] = 1;
+  mapData[i][5] = 1;
+  mapData[i][6] = 1;
+}
+
+const buildings = [
+  { name: 'Town Hall',          x: 5, y: 5, w: 2, color: '#a0b2c6', roof: '#3a7bd5', h: 90 },
+  { name: "Researcher's House", x: 2, y: 2, w: 1, color: '#eef2f3', roof: '#4fc3d9', h: 50 },
+  { name: "Writer's House",     x: 8, y: 2, w: 1, color: '#f1e7c6', roof: '#6fcf6f', h: 46 },
+  { name: "Planner's House",    x: 2, y: 8, w: 1, color: '#f4ede1', roof: '#e0b84f', h: 48 },
+  { name: "Coder's House",      x: 8, y: 8, w: 1, color: '#e8e4f3', roof: '#b06fe0', h: 46 },
+];
+
+const agents = [
+  { key: 'researcher', name: 'Researcher', x: 2.5, y: 3.3, color: '#4fc3d9' },
+  { key: 'writer',     name: 'Writer',     x: 8.5, y: 3.3, color: '#6fcf6f' },
+  { key: 'planner',    name: 'Planner',    x: 2.5, y: 9.3, color: '#e0b84f' },
+  { key: 'coder',      name: 'Coder',      x: 8.5, y: 9.3, color: '#b06fe0' },
+];
+
+buildings.sort((a, b) => (a.x + a.y) - (b.x + b.y));
+
+function drawTile(x, y, color) {
+  const p = gridToScreen(x, y);
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+  ctx.lineTo(p.x + TILE_WIDTH / 2, p.y + TILE_HEIGHT / 2);
+  ctx.lineTo(p.x, p.y + TILE_HEIGHT);
+  ctx.lineTo(p.x - TILE_WIDTH / 2, p.y + TILE_HEIGHT / 2);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+  ctx.stroke();
+}
+
+function drawGrid() {
+  for (let x = 0; x < MAP_SIZE; x++) {
+    for (let y = 0; y < MAP_SIZE; y++) {
+      const isRoad = mapData[x][y] === 1;
+      drawTile(x, y, isRoad ? '#95a5a6' : '#7ec855');
+    }
+  }
+}
+
+function shade(hex, amt) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  let r = Math.min(255, Math.max(0, (num >> 16) + amt));
+  let g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amt));
+  let b = Math.min(255, Math.max(0, (num & 0x0000FF) + amt));
+  return `rgb(${r},${g},${b})`;
+}
+
+function drawBuilding(b) {
+  const top = gridToScreen(b.x, b.y);
+  const HW = (TILE_WIDTH * b.w) / 2;
+  const HH = (TILE_HEIGHT * b.w) / 2;
+  const H = b.h;
+
+  const N = { x: top.x, y: top.y };
+  const E = { x: top.x + HW, y: top.y + HH };
+  const S = { x: top.x, y: top.y + 2 * HH };
+  const W = { x: top.x - HW, y: top.y + HH };
+
+  const Nt = { x: N.x, y: N.y - H };
+  const Et = { x: E.x, y: E.y - H };
+  const St = { x: S.x, y: S.y - H };
+  const Wt = { x: W.x, y: W.y - H };
+
+  ctx.beginPath();
+  ctx.moveTo(W.x, W.y);
+  ctx.lineTo(S.x, S.y);
+  ctx.lineTo(St.x, St.y);
+  ctx.lineTo(Wt.x, Wt.y);
+  ctx.closePath();
+  ctx.fillStyle = shade(b.color, -30);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(S.x, S.y);
+  ctx.lineTo(E.x, E.y);
+  ctx.lineTo(Et.x, Et.y);
+  ctx.lineTo(St.x, St.y);
+  ctx.closePath();
+  ctx.fillStyle = shade(b.color, -55);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(Nt.x, Nt.y);
+  ctx.lineTo(Et.x, Et.y);
+  ctx.lineTo(St.x, St.y);
+  ctx.lineTo(Wt.x, Wt.y);
+  ctx.closePath();
+  ctx.fillStyle = b.roof;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+  ctx.stroke();
+
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+  ctx.lineWidth = 3;
+  ctx.textAlign = 'center';
+  ctx.strokeText(b.name, Nt.x, Nt.y - 10);
+  ctx.fillText(b.name, Nt.x, Nt.y - 10);
+}
+
+
+function drawAgent(a) {
+  const p = gridToScreen(a.x, a.y);
+  const footY = p.y + TILE_HEIGHT / 2;
+
+  ctx.beginPath();
+  ctx.ellipse(p.x, footY + 4, 10, 4, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(p.x, footY - 8, 9, 0, Math.PI * 2);
+  ctx.fillStyle = a.color;
+  ctx.fill();
+  ctx.strokeStyle = '#1c2733';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.font = '11px sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+  ctx.lineWidth = 3;
+  ctx.textAlign = 'center';
+  ctx.strokeText(a.name, p.x, footY - 22);
+  ctx.fillText(a.name, p.x, footY - 22);
+}
+
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawGrid();
+  buildings.forEach(drawBuilding);
+  agents.forEach(drawAgent);
+}
+
+render();
+</script>
+</body>
+</html>
