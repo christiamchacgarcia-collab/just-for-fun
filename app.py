@@ -5,6 +5,7 @@ import time
 import json
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from docx import Document
+from docx.shared import Pt
 from agents import Agent
 
 app = Flask(__name__)
@@ -123,6 +124,13 @@ Reply with ONLY the agent name(s), comma-separated, nothing else."""
 
 def text_to_docx(text, filepath):
     doc = Document()
+
+    header = doc.add_paragraph()
+    header_run = header.add_run("NOVA - No One's Virtual Assistant")
+    header_run.bold = True
+    header_run.font.size = Pt(9)
+    doc.add_paragraph("")
+
     for raw_line in text.split("\n"):
         line = raw_line.rstrip()
 
@@ -147,8 +155,6 @@ def text_to_docx(text, filepath):
                     run.bold = True
 
     doc.save(filepath)
-
-
 def save_agent_output(agent_name, text):
     os.makedirs("outputs", exist_ok=True)
     existing = len([f for f in os.listdir("outputs") if f.startswith(agent_name)])
